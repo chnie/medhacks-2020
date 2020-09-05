@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<title>MedHacks 2020</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.js"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container-fluid">
+<div class="row">
+    <div class="col-12">
+        <h1>The population you have selected has {{population_size}} people</h1>
+    </div>
+</div>
+<div class="row">
+    <div class="col-4">
+        <canvas id="conditions_frequency" width="400", height="400"/>
+        <script>
+        var ctx = $("#conditions_frequency");
+        var chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+            datasets: [{
+                data: {{condition_counts}}
+            }],
+            labels : [{% for label in condition_labels %} "{{label}}", {% endfor %}]
+            }
+            });
+        </script>
+    </div>
+</div>
+{{condition_counts}}
+{{condition_labels}}
+</div>
+</body>
+</html>

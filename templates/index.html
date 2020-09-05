@@ -49,23 +49,30 @@
   </div>
 </div>
 <div class="row">
+<form id="filterform" method="POST" action="/filter_patients">
     <div class="col-sm-3">
       Gender<br />
-      <input type="text" data-role="tagsinput" value="{% for option in gender %} {{option}}, {% endfor %}" id="genderfilter" autocomplete="off">
+      <input name="genderfilter" type="text" data-role="tagsinput" value="{% for option in gender %} {{option}}, {% endfor %}" id="genderfilter" autocomplete="off">
     </div>
     <div class="col-sm-3">
       Race<br />
-      <input type="text" data-role="tagsinput" value="{% for option in race %} {{option}}, {% endfor %}" id="racefilter">
+      <input name="racefilter" type="text" data-role="tagsinput" value="{% for option in race %} {{option}}, {% endfor %}" id="racefilter">
     </div>
     <div class="col-sm-3">
     Patients have these conditions<br />
-    <input type="text" data-role="tagsinput" value="{% for code, name in conditions %} {{name}}, {% endfor %}" id="condition_positive_filter">
+    <input name="positiveconditions" type="text" data-role="tagsinput" value="" id="condition_positive_filter">
     </div>
     <div class="col-sm-3">
     Patients do not have these conditions<br />
-    <input type="text" data-role="tagsinput" value="" id="condition_negative_filter">
+    <input name="negativeconditions" type="text" data-role="tagsinput" value="" id="condition_negative_filter">
     </div>
 </div>
+<div class="row">
+    <div class="col-12">
+    <input type="submit" id="filter_population" value="Filter">
+    </div>
+</div>
+</form>
 </div>
 </body>
 </html>
