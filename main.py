@@ -3,6 +3,7 @@ from flask import Flask, render_template, make_response, jsonify, request, sessi
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 from BigQueryClient import BigQueryClient
 
@@ -141,6 +142,14 @@ def population_summary():
     medications_per_patient = list(unresolved["PATIENT"].value_counts().value_counts().values)
     medications_per_patient_labels = unresolved["PATIENT"].value_counts().value_counts().index.tolist()
     
+    encounters = get_encounters()
+    overallencounters = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters["START"].values)]
+    emergency  = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters.loc[encounters["ENCOUNTERCLASS"]=="emergency"]["START"].values)]
+    outpatient  = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters.loc[encounters["ENCOUNTERCLASS"]=="outpatient"]["START"].values)]
+    ambulatory  = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters.loc[encounters["ENCOUNTERCLASS"]=="ambulatory"]["START"].values)]
+    encounters_per_patient = list(encounters["PATIENT"].value_counts().value_counts().values)
+    encounters_per_patient_label = encounters_per_patient = encounters["PATIENT"].value_counts().value_counts().index.tolist()
+    
     return render_template("summarypage.html", population_size=len(session["activeprofile"]), 
                            condition_counts=condition_counts, condition_labels=condition_count_labels.tolist(),
                            active_condition_counts=active_condition_counts, active_condition_count_labels=active_condition_count_labels.tolist(),
@@ -150,7 +159,11 @@ def population_summary():
                            active_medications_counts=active_medications_counts,
                            active_medications_count_labels=active_medications_count_labels.tolist(),
                            medications_per_patient=medications_per_patient,
-                           medications_per_patient_labels=medications_per_patient_labels)
+                           medications_per_patient_labels=medications_per_patient_labels,
+                           overallencounters=overallencounters, emergency=emergency,
+                           outpatient=outpatient,ambulatory=ambulatory,
+                           encounters_per_patient=encounters_per_patient,
+                           encounters_per_patient_label=encounters_per_patient_label)
 
 @app.route("/get_current_profiles", methods=["GET"])
 def get_profiles():
@@ -172,6 +185,11 @@ def get_demographics(no_profile=False):
 def get_medications():
     client = BigQueryClient()
     result = client.query("SELECT PATIENT, START, STOP, DESCRIPTION, ENCOUNTER, REASONDESCRIPTION FROM Synthea2.Medications WHERE PATIENT IN ({})".format(",".join(["'{}'".format(x) for x in session["activeprofile"]])))
+    return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
+
+def get_encounters():
+    client = BigQueryClient()
+    result = client.query("SELECT PATIENT, START, STOP, ORGANIZATION, ENCOUNTERCLASS FROM Synthea2.Encounters WHERE PATIENT IN ({}) AND DATE_DIFF(CURRENT_DATE, CAST(START as DATE), YEAR) <= 1".format(",".join(["'{}'".format(x) for x in session["activeprofile"]])))
     return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
 
 if __name__ == '__main__':
