@@ -1,20 +1,41 @@
-import datetime
-
 from flask import Flask, render_template
 
-app = Flask(__name__)
+from BigQueryClient import BigQueryClient
 
+app = Flask(__name__)
+#Table Names
+PATIENT = "Patients"
+MEDICATIONS = "Medications"
+ENCOUNTERS = "Encounters"
+ORGANIZATIONS = "Organizations"
+PROCEDURES = "Procedures"
+OBSERVATIONS = "Observations"
+CONDITIONS = "Conditions"
+
+#Patient columns
+PATIENT_GENDER = "GENDER"
+PATIENT_RACE = "RACE"
+PATIENT_ID = "Id"
+
+#Condition Columns
+CONDITION_CODE = "CODE"
+CONDITION_DESCRIPTION = "DESCRIPTION"
+
+#Organization Columns
+ORGANIZATION_ID = "Id"
+ORGANIZATION_NAME = "NAME"
 
 @app.route('/')
 def root():
-    # For the sake of example, use static information to inflate the template.
-    # This will be replaced with real information in later steps.
-    dummy_times = [datetime.datetime(2018, 1, 1, 10, 0, 0),
-                   datetime.datetime(2018, 1, 2, 10, 30, 0),
-                   datetime.datetime(2018, 1, 3, 11, 0, 0),
-                   ]
+    client = BigQueryClient()
+    
+    gender = [row[PATIENT_GENDER] for row in client.query("SELECT DISTINCT {} FROM Synthea2.{}".format(PATIENT_GENDER, PATIENT))]
+    race = [row[PATIENT_RACE] for row in client.query("SELECT DISTINCT {} FROM Synthea2.{}".format(PATIENT_RACE, PATIENT))]
+    conditions = [(row[CONDITION_CODE],row[CONDITION_DESCRIPTION]) for row in client.query("SELECT DISTINCT {},{} from Synthea2.{}".format(CONDITION_CODE, CONDITION_DESCRIPTION, CONDITIONS))]
+    practices = [(row[ORGANIZATION_ID],row[ORGANIZATION_NAME]) for row in client.query("SELECT DISTINCT {},{} from Synthea2.{}".format(ORGANIZATION_ID, ORGANIZATION_NAME, ORGANIZATIONS))]
+    patientno = [row.count for row in client.query("SELECT COUNT(DISTINCT {}) as count FROM Synthea2.{}".format(PATIENT_ID, PATIENT))][0]
 
-    return render_template('index.html', times=dummy_times)
+    return render_template('index.html', gender=gender, race=race, conditions=conditions, practices=practices, patientno=patientno)
 
 
 if __name__ == '__main__':

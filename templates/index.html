@@ -1,13 +1,71 @@
 <!doctype html>
 <html>
 <head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.0/angular.min.js"></script>  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
+  <script src="https://twitter.github.io/typeahead.js/releases/latest/typeahead.bundle.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput-angular.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput-angular.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput-typeahead.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.css">
+  
+  
   <title>MedHacks 2020</title>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  
+  <script>
+  $(document).ready(function() {
+      var genderoptions = [{% for option in gender %} '{{option}}', {% endfor %}];
+      var raceoptions = [{% for option in race %} '{{option}}', {% endfor %}];
+      var conditionoptions = [{% for code, name in conditions %} '{{name}}', {% endfor %}];
+      $("#genderfilter").on('beforeItemAdd', function(event) {
+          if($("#genderfilter").val().includes(event.item)) event.cancel = true;
+          if(!genderoptions.includes(event.item)) event.cancel = true;
+      });
+      $("#racefilter").on('beforeItemAdd', function(event) {
+          if($("#racefilter").val().includes(event.item)) event.cancel = true;
+          if(!raceoptions.includes(event.item)) event.cancel = true;
+      });
+      $("#condition_positive_filter").on('beforeItemAdd', function(event) {
+          if($("#condition_positive_filter").val().includes(event.item) || $("#condition_negative_filter").val().includes(event.item)) event.cancel = true;
+          if(!conditionoptions.includes(event.item)) event.cancel = true;
+      });
+      $("#condition_negative_filter").on('beforeItemAdd', function(event) {
+          if($("#condition_positive_filter").val().includes(event.item) || $("#condition_negative_filter").val().includes(event.item)) event.cancel = true;
+          if(!conditionoptions.includes(event.item)) event.cancel = true;
+      });
+  })
+  </script>
 </head>
 <body>
-
+<div class="container-fluid">
+<div class="row">
+  <div class="col-12">
   <h1>Dashboard</h1>
-
+  There are currently {{patientno}} patients in the electronic health records
+  </div>
+</div>
+<div class="row">
+    <div class="col-sm-3">
+      Gender<br />
+      <input type="text" data-role="tagsinput" value="{% for option in gender %} {{option}}, {% endfor %}" id="genderfilter" autocomplete="off">
+    </div>
+    <div class="col-sm-3">
+      Race<br />
+      <input type="text" data-role="tagsinput" value="{% for option in race %} {{option}}, {% endfor %}" id="racefilter">
+    </div>
+    <div class="col-sm-3">
+    Patients have these conditions<br />
+    <input type="text" data-role="tagsinput" value="{% for code, name in conditions %} {{name}}, {% endfor %}" id="condition_positive_filter">
+    </div>
+    <div class="col-sm-3">
+    Patients do not have these conditions<br />
+    <input type="text" data-role="tagsinput" value="" id="condition_negative_filter">
+    </div>
+</div>
+</div>
 </body>
 </html>
