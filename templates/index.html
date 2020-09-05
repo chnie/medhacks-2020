@@ -10,6 +10,23 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput-angular.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput-typeahead.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.css">
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script>
+  $( function() {
+    $( "#slider-range" ).slider({
+      range: true,
+      min: 0,
+      max: 200,
+      values: [ 0, 200 ],
+      slide: function( event, ui ) {
+        $( "#lowerage" ).val( ui.values[ 0 ]);
+        $("#upperage").val(ui.values[ 1 ] );
+      }
+    });
+  } );
+  </script>
   
   
   <title>MedHacks 2020</title>
@@ -21,6 +38,7 @@
       var genderoptions = [{% for option in gender %} '{{option}}', {% endfor %}];
       var raceoptions = [{% for option in race %} '{{option}}', {% endfor %}];
       var conditionoptions = [{% for code, name in conditions %} '{{name}}', {% endfor %}];
+      var practiceoptions = [{% for code, name in practices %} '{{name}}', {% endfor %}];
       $("#genderfilter").on('beforeItemAdd', function(event) {
           if($("#genderfilter").val().includes(event.item)) event.cancel = true;
           if(!genderoptions.includes(event.item)) event.cancel = true;
@@ -37,6 +55,10 @@
           if($("#condition_positive_filter").val().includes(event.item) || $("#condition_negative_filter").val().includes(event.item)) event.cancel = true;
           if(!conditionoptions.includes(event.item)) event.cancel = true;
       });
+      $("#practices").on('beforeItemAdd', function(event) {
+          if($("#practices").val().includes(event.item)) event.cancel = true;
+          if(!practiceoptions.includes(event.item)) event.cancel = true;
+      });
   })
   </script>
 </head>
@@ -44,33 +66,124 @@
 <div class="container-fluid">
 <div class="row">
   <div class="col-12">
-  <h1>Dashboard</h1>
+  <h1>Data Analysis System for Senior Health (DASSHboard)</h1>
   There are currently {{patientno}} patients in the electronic health records
   </div>
 </div>
-<div class="row">
 <form id="filterform" method="POST" action="/filter_patients">
-    <div class="col-sm-3">
+<div class="row">
+<div class="col-4"></div>
+<div class="col-4">
+    <center>
+    Age range: <input type="text" name="lowerage" id="lowerage" value="0" disabled> to <input type="text" name="upperage" id="upperage" vaule="200" disabled><br />
+    <div id="slider-range" style="width:400px"></div>
+    
       Gender<br />
       <input name="genderfilter" type="text" data-role="tagsinput" value="{% for option in gender %} {{option}}, {% endfor %}" id="genderfilter" autocomplete="off">
-    </div>
-    <div class="col-sm-3">
-      Race<br />
+      <script>
+      var gendersuggester = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local : [{% for option in gender %} {"name": '{{option}}'}, {% endfor %}]
+        });
+        gendersuggester.initialize();
+        
+        $('#genderfilter').tagsinput({
+          typeaheadjs: {
+            name: 'gender',
+            displayKey: 'name',
+            valueKey: 'name',
+            source: gendersuggester.ttAdapter()
+          }
+        });
+      </script>
+      
+      <br />Race<br />
       <input name="racefilter" type="text" data-role="tagsinput" value="{% for option in race %} {{option}}, {% endfor %}" id="racefilter">
-    </div>
-    <div class="col-sm-3">
-    Patients have these conditions<br />
+      <script>
+      var racesuggester = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local : [{% for option in race %} {"name": '{{option}}'}, {% endfor %}]
+        });
+        racesuggester.initialize();
+        
+        $('#racefilter').tagsinput({
+          typeaheadjs: {
+            name: 'races',
+            displayKey: 'name',
+            valueKey: 'name',
+            source: racesuggester.ttAdapter()
+          }
+        });
+      </script>
+    
+    
+    <br />Conditions to include<br />
     <input name="positiveconditions" type="text" data-role="tagsinput" value="" id="condition_positive_filter">
-    </div>
-    <div class="col-sm-3">
-    Patients do not have these conditions<br />
+    <script>
+      var conditionsuggester = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local : [{% for option in conditions %} {"name": '{{option[1] }}'}, {% endfor %}]
+        });
+        conditionsuggester.initialize();
+        
+        $('#condition_positive_filter').tagsinput({
+          typeaheadjs: {
+            name: 'races',
+            displayKey: 'name',
+            valueKey: 'name',
+            source: conditionsuggester.ttAdapter()
+          }
+        });
+      </script>
+    
+    <br />Conditions to exclude<br />
     <input name="negativeconditions" type="text" data-role="tagsinput" value="" id="condition_negative_filter">
-    </div>
-</div>
-<div class="row">
+    <script>
+      var conditionsuggester = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local : [{% for option in conditions %} {"name": '{{option[1]}}'}, {% endfor %}]
+        });
+        conditionsuggester.initialize();
+        
+        $('#condition_negative_filter').tagsinput({
+          typeaheadjs: {
+            name: 'races',
+            displayKey: 'name',
+            valueKey: 'name',
+            source: conditionsuggester.ttAdapter()
+          }
+        });
+      </script>
+      
+      <br />Practices<br />
+    <input name="practices" type="text" data-role="tagsinput" value="" id="practices">
+    <script>
+      var practicesuggester = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          local : [{% for option in practices %} {"name": '{{option[1]}}'}, {% endfor %}]
+        });
+        practicesuggester.initialize();
+        
+        $('#practices').tagsinput({
+          typeaheadjs: {
+            name: 'practices',
+            displayKey: 'name',
+            valueKey: 'name',
+            source: practicesuggester.ttAdapter()
+          }
+        });
+      </script>
+
     <div class="col-12">
     <input type="submit" id="filter_population" value="Filter">
+    </center>
     </div>
+<div class="col-4"></div>
 </div>
 </form>
 </div>
