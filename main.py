@@ -64,22 +64,24 @@ def filter_patients():
         genderquery = ""
     positiveconditions = [x.strip() for x in request.form.get("positiveconditions").strip().split(",")]
     if len(positiveconditions) > 0:
-
         positiveconditionsquery = "{}.{} IN (SELECT {} FROM {}.{} WHERE {} IN ({}))".format(PATIENT,PATIENT_ID, CONDITION_PATIENT,DATABASE,CONDITIONS,CONDITIONS_DESCRIPTION, ",".join(["'{}'".format(x) for x in positiveconditions]))
     else:
         positiveconditionsquery = ""
-    """
-    upperagefilter = request.form.get("age_upper").strip()
+    negativeconditions = [x.strip() for x in request.form.get("negativeconditions").strip().split(",")]
+    if len(negativeconditions) > 0:
+        negativeconditionsquery = "{}.{} NOT IN (SELECT {} FROM {}.{} WHERE {} IN ({}))".format(PATIENT,PATIENT_ID, CONDITION_PATIENT,DATABASE,CONDITIONS,CONDITIONS_DESCRIPTION, ",".join(["'{}'".format(x) for x in positiveconditions]))
+    else:
+        negativeconditionsquery = ""
+    upperagefilter = request.form.get("upperage").strip()
     if upperagefilter != "":
         upperagequery = "DATE_DIFF(CURRENT_DATE,{}.{},YEAR) <= {}".format(PATIENT,PATIENT_BIRTHDATE,upperagefilter)
     else:
         upperagequery = ""
-    loweragefilter = request.form.get("age_lower").strip()
+    loweragefilter = request.form.get("lowerage").strip()
     if loweragefilter != "":
         loweragequery = "DATE_DIFF(CURRENT_DATE,{}.{},YEAR) >= {}".format(PATIENT,PATIENT_BIRTHDATE,loweragefilter)
     else:
         loweragequery = ""
-    """
     
     client = BigQueryClient()
     overallquery = "SELECT {}.{} FROM {}.{} WHERE {} IS NULL".format(PATIENT,PATIENT_ID,DATABASE,PATIENT,PATIENT_DEATHDATE)
@@ -91,7 +93,10 @@ def filter_patients():
         overallquery += " AND " + positiveconditionsquery
     elif positiveconditionsquery != "" and overallquery.find("WHERE") == -1:
         overallquery += " WHERE " + positiveconditionsquery
-    """
+    if negativeconditionsquery != "" and overallquery.find("WHERE") > -1:
+        overallquery += " AND " + negativeconditionsquery
+    elif negativeconditionsquery != "" and overallquery.find("WHERE") == -1:
+        overallquery += " WHERE " + negativeconditionsquery
     if loweragequery != "" and overallquery.find("WHERE") > -1:
         overallquery += " AND " + loweragequery
     elif loweragequery != "" and overallquery.find("WHERE") == -1:
@@ -100,7 +105,6 @@ def filter_patients():
         overallquery += " AND " + upperagequery
     elif upperagequery != "" and overallquery.find("WHERE") == -1:
         overallquery += " WHERE " + upperagequery
-    """
     
     session["activeprofile"] = [row.Id for row in client.query(overallquery)]
     return redirect("/population_summary")
