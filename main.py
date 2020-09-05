@@ -37,6 +37,9 @@ def root():
 
     return render_template('index.html', gender=gender, race=race, conditions=conditions, practices=practices, patientno=patientno)
 
+@app.route("/filter_patients")
+def filter_patients():
+    pass
 
 if __name__ == '__main__':
     # This is used when running locally only. When deploying to Google App
