@@ -57,17 +57,17 @@ def root():
 
 @app.route("/filter_patients", methods=["GET", "POST"])
 def filter_patients():
-    genderfilter = [x.strip for x in request.form.get("genderfilter").strip().split(",")]
+    genderfilter = list(filter(lambda x : x, [x.strip for x in request.form.get("genderfilter").strip().split(",")]))
     if len(genderfilter) == 1:
         genderquery = "{}.{} = '{}'".format(PATIENT,PATIENT_GENDER, genderfilter[0])
     else:
         genderquery = ""
-    positiveconditions = [x.strip() for x in request.form.get("positiveconditions").strip().split(",")]
+    positiveconditions = list(filter(lambda x : x, [x.strip() for x in request.form.get("positiveconditions").strip().split(",")]))
     if len(positiveconditions) > 0:
         positiveconditionsquery = "{}.{} IN (SELECT {} FROM {}.{} WHERE {} IN ({}))".format(PATIENT,PATIENT_ID, CONDITION_PATIENT,DATABASE,CONDITIONS,CONDITIONS_DESCRIPTION, ",".join(["'{}'".format(x) for x in positiveconditions]))
     else:
         positiveconditionsquery = ""
-    negativeconditions = [x.strip() for x in request.form.get("negativeconditions").strip().split(",")]
+    negativeconditions = list(filter(lambda x : x, [x.strip() for x in request.form.get("negativeconditions").strip().split(",")]))
     if len(negativeconditions) > 0:
         negativeconditionsquery = "{}.{} NOT IN (SELECT {} FROM {}.{} WHERE {} IN ({}))".format(PATIENT,PATIENT_ID, CONDITION_PATIENT,DATABASE,CONDITIONS,CONDITIONS_DESCRIPTION, ",".join(["'{}'".format(x) for x in positiveconditions]))
     else:
@@ -105,9 +105,13 @@ def filter_patients():
         overallquery += " AND " + upperagequery
     elif upperagequery != "" and overallquery.find("WHERE") == -1:
         overallquery += " WHERE " + upperagequery
-    
+    print(request.form)
+    print(overallquery)
     session["activeprofile"] = [row.Id for row in client.query(overallquery)]
-    return redirect("/population_summary")
+    if len(session["activeprofile"]) == 0:
+        return make_response("Sorry no patients found meeting that criteria", 200)
+    else:
+        return redirect("/population_summary")
 
 @app.route("/population_summary")
 def population_summary():
