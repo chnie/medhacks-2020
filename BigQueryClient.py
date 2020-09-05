@@ -4,7 +4,7 @@ from google.cloud import bigquery
 class BigQueryClient:
 	class __BigQueryClient:
 		def __init__(self):
-			self.credentials = service_account.Credentials.from_service_account_file("./medhack2020-358dba3abfd4.json", scopes=["https://www.googleapis.com/auth/cloud-platform"])
+			self.credentials = service_account.Credentials.from_service_account_file("./medhack2020-b2f3ee3bbaf3.json", scopes=["https://www.googleapis.com/auth/cloud-platform"])
 			self.client = bigquery.Client(credentials=self.credentials, project=self.credentials.project_id)
 
 		def query(self, qstring):
