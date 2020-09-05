@@ -180,6 +180,108 @@
     </div>
 </div>
 
+<div id="Encounters">
+<h2>Clinical Encounters</h2>
+<div class="row">
+    <div class="col-4">
+        <div id="encounterdistribution" style="float:left"></div>
+        <script>
+        var trace = {
+            x: {{overallencounters|tojson}},
+            type: 'histogram',
+            nbinsx:12
+          };
+        var data = [trace];
+        var layout= {
+            title:" Encounter distribution",
+            yaxis:{title:"Frequency"},
+            xaxis:{title:"Time"},
+            height:400,
+            width:500
+        }
+        Plotly.newPlot('encounterdistribution', data, layout);
+        </script>
+    </div>
+    <div class="col-4">
+        <div id="emergencydistribution" style="float:left"></div>
+        <script>
+        var trace = {
+            x: {{emergency|tojson}},
+            type: 'histogram',
+            nbinsx:12
+          };
+        var data = [trace];
+        var layout= {
+            title:" Emergency Presentations",
+            yaxis:{title:"Frequency"},
+            xaxis:{title:"Time"},
+            height:400,
+            width:500
+        }
+        Plotly.newPlot('emergencydistribution', data, layout);
+        </script>
+    </div>
+    <div class="col-4">
+        <div id="outpatientdistribution" style="float:left"></div>
+        <script>
+        var trace = {
+            x: {{outpatient|tojson}},
+            type: 'histogram',
+            nbinsx:12
+          };
+        var data = [trace];
+        var layout= {
+            title:" Outpatient Presentations",
+            yaxis:{title:"Frequency"},
+            xaxis:{title:"Time"},
+            height:400,
+            width:500
+        }
+        Plotly.newPlot('outpatientdistribution', data, layout);
+        </script>
+    </div>
+</div>
+<div class="row">
+<div class="col-4">
+        <div id="ambulatorydistribution" style="float:left"></div>
+        <script>
+        var trace = {
+            x: {{ambulatory|tojson}},
+            type: 'histogram',
+            nbinsx:12
+          };
+        var data = [trace];
+        var layout= {
+            title:" Ambulatory Presentations",
+            yaxis:{title:"Frequency"},
+            xaxis:{title:"Time"},
+            height:400,
+            width:500
+        }
+        Plotly.newPlot('ambulatorydistribution', data, layout);
+        </script>
+    </div>
+    <div class="col-4">
+        <div id="encounters_per_patient" style="float:left"></div>
+        <script>
+        var data = [{
+            x: {{encounters_per_patient_label|tojson}},
+            y: {{encounters_per_patient}},
+            type: 'bar',
+        }]
+        var layout = {
+            title: "Number of encounters per patient per year",
+            xaxis: {title: "Number of encounters for a single patient", dtick: 1},
+            yaxis: {title: "Frequency"},
+            width: 500,
+            height: 400
+        }
+        Plotly.newPlot("encounters_per_patient", data, layout)
+        </script>
+    </div>
+    <div class="col-4">
+    </div>
+</div>
 </div>
 </body>
 </html>
