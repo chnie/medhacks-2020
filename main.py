@@ -105,17 +105,23 @@ def filter_patients():
         overallquery += " AND " + upperagequery
     elif upperagequery != "" and overallquery.find("WHERE") == -1:
         overallquery += " WHERE " + upperagequery
-    print(request.form)
-    print(overallquery)
-    session["activeprofile"] = [row.Id for row in client.query(overallquery)]
-    if len(session["activeprofile"]) == 0:
+
+    temp = [row.Id for row in client.query(overallquery)]
+    if len(temp) == 0:
         return make_response("Sorry no patients found meeting that criteria", 200)
     else:
+        f = open("activeprofile.txt","w")
+        f.write(",".join(temp))
+        f.close()
         return redirect("/population_summary")
 
 @app.route("/population_summary")
 def population_summary():
-    conditions = get_conditions();
+    f = open("activeprofile.txt","r")
+    data = f.read().split(",")
+    f.close()
+    
+    conditions = get_conditions(data);
     condition_counts = conditions["DESCRIPTION"].value_counts().values
     condition_count_labels = conditions["DESCRIPTION"].value_counts().index
     condition_counts = list(condition_counts[condition_count_labels != ""])
@@ -132,7 +138,7 @@ def population_summary():
     #for i in range(len(active_condition_count_labels)):
     #    unresolved["DESCRIPTION"] == active_condition_count_labels[i]
     
-    demographics = get_demographics()
+    demographics = get_demographics(data)
     gender_ratio = list(demographics["GENDER"].value_counts().values)
     gender_ratio_labels  = demographics["GENDER"].value_counts().index.tolist()
     
@@ -141,7 +147,7 @@ def population_summary():
     races = list(demographics["RACE"].value_counts().values)
     races_labels = demographics["RACE"].value_counts().index.tolist()
     
-    medications = get_medications();
+    medications = get_medications(data);
     active_medications_counts = medications.loc[medications["STOP"].isnull()]["DESCRIPTION"].value_counts().values
     active_medications_count_labels = medications.loc[medications["STOP"].isnull()]["DESCRIPTION"].value_counts().index
     active_medications_counts = list(active_medications_counts[active_medications_count_labels != ""])
@@ -150,7 +156,7 @@ def population_summary():
     medications_per_patient = list(unresolved["PATIENT"].value_counts().value_counts().values)
     medications_per_patient_labels = unresolved["PATIENT"].value_counts().value_counts().index.tolist()
     
-    encounters = get_encounters()
+    encounters = get_encounters(data)
     overallencounters = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters["START"].values)]
     emergency  = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters.loc[encounters["ENCOUNTERCLASS"]=="emergency"]["START"].values)]
     outpatient  = [datetime.fromtimestamp(int(x) // 1000000000).strftime('%Y-%m-%d %H:%M:%S') for x in list(encounters.loc[encounters["ENCOUNTERCLASS"]=="outpatient"]["START"].values)]
@@ -158,7 +164,7 @@ def population_summary():
     encounters_per_patient = list(encounters["PATIENT"].value_counts().value_counts().values)
     encounters_per_patient_label = encounters_per_patient = encounters["PATIENT"].value_counts().value_counts().index.tolist()
     
-    return render_template("summarypage.html", population_size=len(session["activeprofile"]), 
+    return render_template("summarypage.html", population_size=len(data), 
                            condition_counts=condition_counts, condition_labels=condition_count_labels.tolist(),
                            active_condition_counts=active_condition_counts, active_condition_count_labels=active_condition_count_labels.tolist(),
                            conditions_per_patient=conditions_per_patient, conditions_per_patient_labels=conditions_per_patient_labels,
@@ -177,27 +183,24 @@ def population_summary():
 def get_profiles():
     return make_response(jsonify(list(session.keys())), 200)
 
-def get_conditions(no_profile=False):
-    if no_profile == True:
-        return
-    else:
-        client = BigQueryClient()
-        result = client.query("SELECT {}, {}, {}, {} FROM {}.{} WHERE {} IN ({})".format(CONDITION_PATIENT,CONDITION_DESCRIPTION, CONDITION_START, CONDITION_STOP,DATABASE,CONDITIONS,CONDITION_PATIENT,",".join(["'{}'".format(x) for x in session["activeprofile"]])))
-        return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
-
-def get_demographics(no_profile=False):
+def get_conditions(profile):
     client = BigQueryClient()
-    result = client.query("SELECT {}, {}, DATE_DIFF(CURRENT_DATE, {}, YEAR) as AGE, {} FROM {}.{} WHERE {} IN ({})".format(PATIENT_GENDER,PATIENT_RACE,PATIENT_BIRTHDATE,PATIENT_DEATHDATE, DATABASE, PATIENT, PATIENT_ID, ",".join(["'{}'".format(x) for x in session["activeprofile"]])))
+    result = client.query("SELECT {}, {}, {}, {} FROM {}.{} WHERE {} IN ({})".format(CONDITION_PATIENT,CONDITION_DESCRIPTION, CONDITION_START, CONDITION_STOP,DATABASE,CONDITIONS,CONDITION_PATIENT,",".join(["'{}'".format(x) for x in profile])))
     return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
 
-def get_medications():
+def get_demographics(profile):
     client = BigQueryClient()
-    result = client.query("SELECT PATIENT, START, STOP, DESCRIPTION, ENCOUNTER, REASONDESCRIPTION FROM Synthea2.Medications WHERE PATIENT IN ({})".format(",".join(["'{}'".format(x) for x in session["activeprofile"]])))
+    result = client.query("SELECT {}, {}, DATE_DIFF(CURRENT_DATE, {}, YEAR) as AGE, {} FROM {}.{} WHERE {} IN ({})".format(PATIENT_GENDER,PATIENT_RACE,PATIENT_BIRTHDATE,PATIENT_DEATHDATE, DATABASE, PATIENT, PATIENT_ID, ",".join(["'{}'".format(x) for x in profile])))
     return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
 
-def get_encounters():
+def get_medications(profile):
     client = BigQueryClient()
-    result = client.query("SELECT PATIENT, START, STOP, ORGANIZATION, ENCOUNTERCLASS FROM Synthea2.Encounters WHERE PATIENT IN ({}) AND DATE_DIFF(CURRENT_DATE, CAST(START as DATE), YEAR) <= 1".format(",".join(["'{}'".format(x) for x in session["activeprofile"]])))
+    result = client.query("SELECT PATIENT, START, STOP, DESCRIPTION, ENCOUNTER, REASONDESCRIPTION FROM Synthea2.Medications WHERE PATIENT IN ({})".format(",".join(["'{}'".format(x) for x in profile])))
+    return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
+
+def get_encounters(profile):
+    client = BigQueryClient()
+    result = client.query("SELECT PATIENT, START, STOP, ORGANIZATION, ENCOUNTERCLASS FROM Synthea2.Encounters WHERE PATIENT IN ({}) AND DATE_DIFF(CURRENT_DATE, CAST(START as DATE), YEAR) <= 1".format(",".join(["'{}'".format(x) for x in profile])))
     return pd.DataFrame([dict(zip(x.keys(),x.values())) for x in result])
 
 if __name__ == '__main__':
